@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini Trader</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        background: '#09090b',
+                        surface: '#18181b',
+                        surfaceHighlight: '#27272a',
+                        primary: '#22c55e',
+                        primaryGlow: '#22c55e20',
+                        danger: '#ef4444',
+                        textMain: '#e4e4e7',
+                        textMuted: '#a1a1aa',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            background-color: #09090b;
+            color: #e4e4e7;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #18181b;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #27272a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3f3f46;
+        }
+
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col antialiased selection:bg-primary selection:text-black">
+
+    <nav class="border-b border-white/5 bg-background/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-emerald-700 flex items-center justify-center text-black font-bold">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                </div>
+                <span class="font-bold text-xl tracking-tight">Gemini<span class="text-primary">Trader</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <div
+                    class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-white/5 text-xs font-medium text-textMuted">
+                    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                    TSX Market Open
+                </div>
+                <div class="w-8 h-8 rounded-full bg-surface border border-white/5 flex items-center justify-center">
+                    <i data-lucide="bell" class="w-4 h-4 text-textMuted"></i>
+                </div>
+                <div
+                    class="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">
+                    TB</div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <aside class="lg:col-span-3 space-y-6">
+            <div class="relative group">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i data-lucide="search"
+                        class="w-4 h-4 text-textMuted group-focus-within:text-primary transition-colors"></i>
+                </div>
+                <input type="text"
+                    class="block w-full pl-10 pr-3 py-2.5 border border-white/10 rounded-xl leading-5 bg-surface text-textMain placeholder-textMuted focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm transition-all"
+                    placeholder="Search ticker (e.g. SHOP.TO)">
+            </div>
+
+            <div class="glass-panel rounded-2xl p-4">
+                <h3 class="text-xs font-semibold text-textMuted uppercase tracking-wider mb-4 px-2">Canadian Banks</h3>
+                <div class="space-y-1" id="bank-list"></div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-5 bg-gradient-to-br from-surface to-surfaceHighlight border-white/5">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-textMuted">S&P/TSX Composite</span>
+                    <span class="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded">+0.8%</span>
+                </div>
+                <div class="text-2xl font-bold text-white">22,145.60</div>
+                <div class="text-xs text-textMuted mt-1">CAD</div>
+            </div>
+        </aside>
+
+        <div class="lg:col-span-9 space-y-6">
+
+            <div class="glass-panel rounded-2xl p-6 border-white/10">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h1 class="text-3xl font-bold text-white" id="stock-symbol">RY.TO</h1>
+                            <span
+                                class="px-2 py-1 rounded-md bg-white/5 text-xs font-medium text-textMuted border border-white/5">TSX</span>
+                        </div>
+                        <h2 class="text-lg text-textMuted mt-1" id="stock-name">Royal Bank of Canada</h2>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-white flex items-center justify-end gap-2">
+                            <span id="stock-price">134.50</span>
+                            <span class="text-lg text-textMuted font-normal">CAD</span>
+                        </div>
+                        <div class="flex items-center justify-end gap-2 mt-1">
+                            <span class="text-sm font-medium text-primary" id="stock-change">+1.24 (0.92%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative h-[200px] w-full">
+                    <canvas id="stockChart"></canvas>
+                </div>
+
+                <div class="flex items-center gap-2 mt-6 border-t border-white/5 pt-4">
+                    <button onclick="selectTimeframe(this, '1D')"
+                        class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/20 text-primary border border-primary/20 transition-colors">1D</button>
+                    <button onclick="selectTimeframe(this, '1W')"
+                        class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-textMuted hover:bg-white/10 hover:text-white transition-colors">1W</button>
+                    <button onclick="selectTimeframe(this, '1M')"
+                        class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-textMuted hover:bg-white/10 hover:text-white transition-colors">1M</button>
+                    <button onclick="selectTimeframe(this, 'YTD')"
+                        class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-textMuted hover:bg-white/10 hover:text-white transition-colors">YTD</button>
+                    <button onclick="selectTimeframe(this, '1Y')"
+                        class="timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-textMuted hover:bg-white/10 hover:text-white transition-colors">1Y</button>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6 border-white/10">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="wallet" class="w-5 h-5 text-primary"></i>
+                        <h3 class="text-lg font-semibold text-white">My Position</h3>
+                        <span id="position-ticker"
+                            class="px-2 py-1 rounded-md bg-primary/10 text-sm font-bold text-primary border border-primary/20">RY.TO</span>
+                        <span class="text-sm text-textMuted">Avg: <span id="avg-price"
+                                class="text-white font-medium">$0.00</span></span>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <div class="text-right">
+                            <div class="text-xs text-textMuted">Market Value</div>
+                            <div class="text-xl font-bold text-white" id="current-market-value">$0</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-textMuted">Total Return</div>
+                            <div class="text-xl font-bold text-textMuted" id="current-return-val">$0</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-textMuted">Return %</div>
+                            <div class="text-xl font-bold text-textMuted" id="current-return-pct">0.0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-textMuted mb-1">Purchase Date</label>
+                            <input type="date" id="purchase-date-1" onchange="updatePositions()"
+                                class="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-textMuted mb-1">Shares</label>
+                            <input type="number" id="purchase-shares-1" onchange="updatePositions()"
+                                class="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+                                placeholder="0">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-textMuted mb-1">Price</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-textMuted text-sm">$</span>
+                                <input type="number" id="purchase-price-1" onchange="updatePositions()"
+                                    class="w-full bg-surface border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+                                    placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <input type="date" id="purchase-date-2" onchange="updatePositions()"
+                                class="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors">
+                        </div>
+                        <div>
+                            <input type="number" id="purchase-shares-2" onchange="updatePositions()"
+                                class="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+                                placeholder="0">
+                        </div>
+                        <div>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-textMuted text-sm">$</span>
+                                <input type="number" id="purchase-price-2" onchange="updatePositions()"
+                                    class="w-full bg-surface border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+                                    placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <input type="date" id="purchase-date-3" onchange="updatePositions()"
+                                class="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors">
+                        </div>
+                        <div>
+                            <input type="number" id="purchase-shares-3" onchange="updatePositions()"
+                                class="w-full bg-surface border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+                                placeholder="0">
+                        </div>
+                        <div>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2 text-textMuted text-sm">$</span>
+                                <input type="number" id="purchase-price-3" onchange="updatePositions()"
+                                    class="w-full bg-surface border border-white/10 rounded-lg pl-6 pr-3 py-2 text-sm text-white focus:border-primary focus:outline-none transition-colors"
+                                    placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    class="mt-6 bg-gradient-to-br from-surface to-surfaceHighlight rounded-xl p-5 border border-white/10">
+                    <h4 class="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+                        <i data-lucide="briefcase" class="w-4 h-4 text-primary"></i>
+                        My Total Stock Position
+                    </h4>
+                    <div class="grid grid-cols-3 gap-6">
+                        <div>
+                            <div class="text-xs text-textMuted mb-1">Total Market Value</div>
+                            <div class="text-2xl font-bold text-white" id="portfolio-market-value">$0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-textMuted mb-1">Total Return ($)</div>
+                            <div class="text-2xl font-bold text-textMuted" id="portfolio-return-val">$0</div>
+                        </div>
+                        <div>
+                            <div class="text-xs text-textMuted mb-1">Total Return (%)</div>
+                            <div class="text-2xl font-bold text-textMuted" id="portfolio-return-pct">0.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <i data-lucide="newspaper" class="w-5 h-5 text-primary"></i>
+                    Latest News
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="news-feed"></div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        lucide.createIcons();
+
+        const BANKS = [
+            { symbol: 'RY.TO', name: 'Royal Bank of Canada', price: 134.50, change: 1.24, changePercent: 0.92 },
+            { symbol: 'TD.TO', name: 'Toronto-Dominion Bank', price: 78.20, change: -0.45, changePercent: -0.57 },
+            { symbol: 'BNS.TO', name: 'Bank of Nova Scotia', price: 64.30, change: 0.15, changePercent: 0.23 },
+            { symbol: 'BMO.TO', name: 'Bank of Montreal', price: 122.10, change: 0.80, changePercent: 0.66 },
+            { symbol: 'CM.TO', name: 'CIBC', price: 62.40, change: 0.30, changePercent: 0.48 },
+            { symbol: 'NA.TO', name: 'National Bank of Canada', price: 108.90, change: 1.10, changePercent: 1.02 },
+        ];
+
+        let currentTimeframe = '1D';
+
+        function renderBankList() {
+            document.getElementById('bank-list').innerHTML = BANKS.map(bank => {
+                const isPositive = bank.change >= 0;
+                const colorClass = isPositive ? 'text-primary' : 'text-danger';
+                const bgHover = isPositive ? 'hover:bg-primary/5' : 'hover:bg-danger/5';
+
+                return `
+                    <button onclick="selectStock('${bank.symbol}')" 
+                            class="w-full flex items-center justify-between p-3 rounded-xl transition-all ${bgHover} group border border-transparent hover:border-white/5 text-left">
+                        <div>
+                            <div class="font-bold text-sm text-white group-hover:text-primary transition-colors">${bank.symbol}</div>
+                            <div class="text-xs text-textMuted truncate max-w-[120px]">${bank.name}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-medium text-sm text-white">${bank.price.toFixed(2)}</div>
+                            <div class="text-xs ${colorClass}">${isPositive ? '+' : ''}${bank.changePercent}%</div>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+        }
+
+        let chartInstance = null;
+
+        function initChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(34, 197, 94, 0.2)');
+            gradient.addColorStop(1, 'rgba(34, 197, 94, 0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Price (CAD)',
+                        data: [],
+                        borderColor: '#22c55e',
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#18181b',
+                            titleColor: '#e4e4e7',
+                            bodyColor: '#e4e4e7',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return '$' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false, drawBorder: false },
+                            ticks: { color: '#52525b', maxTicksLimit: 6 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)', drawBorder: false },
+                            ticks: { color: '#52525b' }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        function generateMockHistory(basePrice, timeframe) {
+            const data = [];
+            const labels = [];
+            let price = basePrice;
+            let points = 50;
+            let volatility = 0.02;
+
+            switch (timeframe) {
+                case '1D': points = 24; volatility = 0.005; break;
+                case '1W': points = 7; volatility = 0.015; break;
+                case '1M': points = 30; volatility = 0.03; break;
+                case 'YTD': points = 60; volatility = 0.08; break;
+                case '1Y': points = 12; volatility = 0.12; break;
+            }
+
+            for (let i = 0; i < points; i++) {
+                const change = (Math.random() - 0.5) * (basePrice * volatility);
+                price += change;
+                data.push(price);
+
+                if (timeframe === '1D') labels.push(`${9 + Math.floor(i / 2)}:${i % 2 === 0 ? '00' : '30'}`);
+                else if (timeframe === '1W') labels.push(`Day ${i + 1}`);
+                else if (timeframe === '1M') labels.push(`Day ${i + 1}`);
+                else if (timeframe === '1Y') labels.push(`Month ${i + 1}`);
+                else labels.push(`T-${i}`);
+            }
+            return { labels, data };
+        }
+
+        function selectTimeframe(btn, timeframe) {
+            currentTimeframe = timeframe;
+
+            document.querySelectorAll('.timeframe-btn').forEach(b => {
+                b.className = 'timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-white/5 text-textMuted hover:bg-white/10 hover:text-white transition-colors';
+            });
+            btn.className = 'timeframe-btn px-3 py-1.5 text-xs font-medium rounded-lg bg-primary/20 text-primary border border-primary/20 transition-colors';
+
+            const symbol = document.getElementById('stock-symbol').textContent;
+            const bank = BANKS.find(b => b.symbol === symbol) || BANKS[0];
+            updateChartData(bank);
+        }
+
+        function updateChartData(bank) {
+            const history = generateMockHistory(bank.price, currentTimeframe);
+            chartInstance.data.labels = history.labels;
+            chartInstance.data.datasets[0].data = history.data;
+
+            const startPrice = history.data[0];
+            const endPrice = history.data[history.data.length - 1];
+            const isTrendPositive = endPrice >= startPrice;
+            const color = isTrendPositive ? '#22c55e' : '#ef4444';
+
+            chartInstance.data.datasets[0].borderColor = color;
+
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, isTrendPositive ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)');
+            gradient.addColorStop(1, isTrendPositive ? 'rgba(34, 197, 94, 0)' : 'rgba(239, 68, 68, 0)');
+            chartInstance.data.datasets[0].backgroundColor = gradient;
+
+            chartInstance.update();
+        }
+
+        function selectStock(symbol) {
+            const bank = BANKS.find(b => b.symbol === symbol) || BANKS[0];
+
+            document.getElementById('stock-symbol').textContent = bank.symbol;
+            document.getElementById('stock-name').textContent = bank.name;
+            document.getElementById('stock-price').textContent = bank.price.toFixed(2);
+            document.getElementById('position-ticker').textContent = bank.symbol;
+
+            const changeEl = document.getElementById('stock-change');
+            const isPositive = bank.change >= 0;
+            changeEl.textContent = `${isPositive ? '+' : ''}${bank.change} (${bank.changePercent}%)`;
+            changeEl.className = `text-sm font-medium ${isPositive ? 'text-primary' : 'text-danger'}`;
+
+            updateChartData(bank);
+            renderNews(bank.name);
+            loadPositions(symbol);
+        }
+
+        function getPortfolioData() {
+            const data = localStorage.getItem('gemini_trader_portfolio');
+            return data ? JSON.parse(data) : {};
+        }
+
+        function savePortfolioData(data) {
+            localStorage.setItem('gemini_trader_portfolio', JSON.stringify(data));
+        }
+
+        function loadPositions(symbol) {
+            const portfolio = getPortfolioData();
+            const positions = portfolio[symbol] || { purchases: [{}, {}, {}] };
+
+            for (let i = 1; i <= 3; i++) {
+                const purchase = positions.purchases[i - 1] || {};
+                document.getElementById(`purchase-date-${i}`).value = purchase.date || '';
+                document.getElementById(`purchase-shares-${i}`).value = purchase.shares || '';
+                document.getElementById(`purchase-price-${i}`).value = purchase.price || '';
+            }
+
+            calculateTotals(symbol);
+        }
+
+        function updatePositions() {
+            const symbol = document.getElementById('stock-symbol').textContent;
+            const purchases = [];
+
+            for (let i = 1; i <= 3; i++) {
+                purchases.push({
+                    date: document.getElementById(`purchase-date-${i}`).value,
+                    shares: document.getElementById(`purchase-shares-${i}`).value,
+                    price: document.getElementById(`purchase-price-${i}`).value
+                });
+            }
+
+            const portfolio = getPortfolioData();
+            portfolio[symbol] = { purchases };
+            savePortfolioData(portfolio);
+
+            calculateTotals(symbol);
+        }
+
+        function calculateTotals(symbol) {
+            const currentBank = BANKS.find(b => b.symbol === symbol);
+            const currentPrice = currentBank ? currentBank.price : 0;
+
+            let currentShares = 0;
+            let currentCost = 0;
+
+            for (let i = 1; i <= 3; i++) {
+                const shares = parseFloat(document.getElementById(`purchase-shares-${i}`).value) || 0;
+                const price = parseFloat(document.getElementById(`purchase-price-${i}`).value) || 0;
+
+                currentShares += shares;
+                currentCost += shares * price;
+            }
+
+            const avgPrice = currentShares > 0 ? currentCost / currentShares : 0;
+            const currentMarketValue = currentShares * currentPrice;
+            const currentProfitLoss = currentMarketValue - currentCost;
+            const currentProfitLossPct = currentCost > 0 ? (currentProfitLoss / currentCost) * 100 : 0;
+
+            document.getElementById('avg-price').textContent = '$' + avgPrice.toFixed(2);
+            document.getElementById('current-market-value').textContent = '$' + currentMarketValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+            const currentReturnValEl = document.getElementById('current-return-val');
+            const currentReturnPctEl = document.getElementById('current-return-pct');
+
+            currentReturnValEl.textContent = (currentProfitLoss >= 0 ? '+' : '') + '$' + currentProfitLoss.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            currentReturnPctEl.textContent = (currentProfitLossPct >= 0 ? '+' : '') + currentProfitLossPct.toFixed(1) + '%';
+
+            const currentColorClass = currentProfitLoss >= 0 ? 'text-primary' : 'text-danger';
+
+            if (currentShares > 0) {
+                currentReturnValEl.className = `text-xl font-bold ${currentColorClass}`;
+                currentReturnPctEl.className = `text-xl font-bold ${currentColorClass}`;
+            } else {
+                currentReturnValEl.className = 'text-xl font-bold text-textMuted';
+                currentReturnPctEl.className = 'text-xl font-bold text-textMuted';
+            }
+
+            const portfolio = getPortfolioData();
+            let portfolioMarketValue = 0;
+            let portfolioCost = 0;
+
+            BANKS.forEach(bank => {
+                const stockData = portfolio[bank.symbol];
+                if (stockData && stockData.purchases) {
+                    stockData.purchases.forEach(purchase => {
+                        const shares = parseFloat(purchase.shares) || 0;
+                        const price = parseFloat(purchase.price) || 0;
+                        portfolioCost += shares * price;
+                        portfolioMarketValue += shares * bank.price;
+                    });
+                }
+            });
+
+            const portfolioProfitLoss = portfolioMarketValue - portfolioCost;
+            const portfolioProfitLossPct = portfolioCost > 0 ? (portfolioProfitLoss / portfolioCost) * 100 : 0;
+
+            document.getElementById('portfolio-market-value').textContent = '$' + portfolioMarketValue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+            const portfolioReturnValEl = document.getElementById('portfolio-return-val');
+            const portfolioReturnPctEl = document.getElementById('portfolio-return-pct');
+
+            portfolioReturnValEl.textContent = (portfolioProfitLoss >= 0 ? '+' : '') + '$' + portfolioProfitLoss.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            portfolioReturnPctEl.textContent = (portfolioProfitLossPct >= 0 ? '+' : '') + portfolioProfitLossPct.toFixed(1) + '%';
+
+            const portfolioColorClass = portfolioProfitLoss >= 0 ? 'text-primary' : 'text-danger';
+
+            if (portfolioCost > 0) {
+                portfolioReturnValEl.className = `text-2xl font-bold ${portfolioColorClass}`;
+                portfolioReturnPctEl.className = `text-2xl font-bold ${portfolioColorClass}`;
+            } else {
+                portfolioReturnValEl.className = 'text-2xl font-bold text-textMuted';
+                portfolioReturnPctEl.className = 'text-2xl font-bold text-textMuted';
+            }
+        }
+
+        function renderNews(companyName) {
+            const newsContainer = document.getElementById('news-feed');
+            const newsItems = [
+                { source: 'Financial Post', time: '2 hours ago', title: `${companyName} reports strong quarterly earnings, beating analyst expectations.`, sentiment: 'positive' },
+                { source: 'Globe and Mail', time: '5 hours ago', title: `Canadian banking sector faces new regulations: What it means for ${companyName}.`, sentiment: 'neutral' },
+                { source: 'Bloomberg', time: '1 day ago', title: `Market analysis: Why ${companyName} is a top pick for dividend investors this year.`, sentiment: 'positive' },
+                { source: 'Reuters', time: '2 days ago', title: `${companyName} announces expansion of its digital banking platform.`, sentiment: 'positive' }
+            ];
+
+            newsContainer.innerHTML = newsItems.map(news => `
+                <div class="glass-panel rounded-xl p-4 border-white/5 hover:border-white/10 transition-colors cursor-pointer group">
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">${news.source}</span>
+                        <span class="text-xs text-textMuted">${news.time}</span>
+                    </div>
+                    <h4 class="text-sm font-medium text-white leading-snug group-hover:text-primary transition-colors">${news.title}</h4>
+                </div>
+            `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderBankList();
+            initChart();
+            selectStock('RY.TO');
+
+            const main = document.querySelector('main');
+            const disclaimer = document.createElement('div');
+            disclaimer.className = 'text-center text-xs text-textMuted mt-8 pb-4';
+            disclaimer.innerHTML = '<span class="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-2"></span>Data is currently <strong>Mock Data</strong> for demonstration purposes.';
+            main.appendChild(disclaimer);
+        });
+
+    </script>
+</body>
+
+</html>
