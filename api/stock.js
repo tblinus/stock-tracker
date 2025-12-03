@@ -1,5 +1,5 @@
 // This serverless function fetches real stock data from Alpha Vantage
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Enable CORS so your website can call this function
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
@@ -47,4 +47,4 @@ export default async function handler(req, res) {
     } catch (error) {
         return res.status(500).json({ error: 'Failed to fetch stock data' });
     }
-}
+};
